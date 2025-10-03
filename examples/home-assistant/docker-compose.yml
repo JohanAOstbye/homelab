@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  homeassistant:
+    image: homeassistant/home-assistant:2024.10.1
+    container_name: homeassistant-dev
+    restart: unless-stopped
+    
+    # Use host network for device discovery
+    network_mode: host
+    
+    environment:
+      - TZ=Europe/Oslo
+    
+    volumes:
+      # Mount config directory for development
+      - ./config:/config
+      - ./data:/data
+      # Mount USB devices (for Zigbee/Z-Wave)
+      - /dev:/dev
+    
+    # Required for USB device access
+    privileged: true
+    
+    ports:
+      - "8123:8123"
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Optional: Add MQTT broker for IoT devices
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto-dev
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-logs:/mosquitto/log
+      - ./mosquitto/config:/mosquitto/config:ro
+    
+  # Optional: Add Node-RED for automation
+  nodered:
+    image: nodered/node-red:3.1
+    container_name: nodered-dev
+    restart: unless-stopped
+    ports:
+      - "1880:1880"
+    volumes:
+      - nodered-data:/data
+    environment:
+      - TZ=Europe/Oslo
+
+volumes:
+  mosquitto-data:
+  mosquitto-logs:
+  nodered-data:

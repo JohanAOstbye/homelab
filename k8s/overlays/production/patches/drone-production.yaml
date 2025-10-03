@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone-server
+  namespace: private
+spec:
+  template:
+    spec:
+      containers:
+        - name: drone-server
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          env:
+            - name: DRONE_LOGS_DEBUG
+              value: "false"
+            - name: DRONE_DATABASE_DATASOURCE
+              value: "/data/database.sqlite"
+            - name: DRONE_DATABASE_DRIVER
+              value: "sqlite3"

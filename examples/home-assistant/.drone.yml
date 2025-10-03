@@ -1,0 +1,198 @@
+kind: pipeline
+type: kubernetes
+name: home-assistant-deploy
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+# Step 1: Validate Home Assistant configuration
+- name: validate-config
+  image: homeassistant/home-assistant:2024.10.1
+  commands:
+  - cd /workspace
+  - cp -r config/* /config/
+  - python -m homeassistant --script check_config --config /config
+  volumes:
+  - name: temp-config
+    path: /config
+
+# Step 2: Validate Kubernetes manifests
+- name: validate-k8s
+  image: bitnami/kubectl:latest
+  commands:
+  - kubectl apply --dry-run=client -f k8s/
+
+# Step 3: Update ConfigMap with new configuration
+- name: update-config
+  image: bitnami/kubectl:latest
+  environment:
+    KUBECONFIG:
+      from_secret: kubeconfig
+  commands:
+  # Create or update the ConfigMap with current config files
+  - |
+    kubectl create configmap homeassistant-config \
+      --from-file=configuration.yaml=config/configuration.yaml \
+      --from-file=automations.yaml=config/automations.yaml \
+      --from-file=scripts.yaml=config/scripts.yaml \
+      --from-file=scenes.yaml=config/scenes.yaml \
+      --namespace=homeassistant \
+      --dry-run=client -o yaml | kubectl apply -f -
+  
+  # Check if the ConfigMap changed
+  - kubectl get configmap homeassistant-config -n homeassistant -o yaml > /tmp/current-config.yaml
+  when:
+    branch:
+    - main
+
+# Step 4: Deploy/Update Home Assistant
+- name: deploy
+  image: bitnami/kubectl:latest
+  environment:
+    KUBECONFIG:
+      from_secret: kubeconfig
+  commands:
+  # Apply all Kubernetes manifests
+  - kubectl apply -f k8s/
+  
+  # Wait for deployment to be ready
+  - kubectl rollout status deployment/homeassistant -n homeassistant --timeout=300s
+  
+  # Restart Home Assistant to reload config (if ConfigMap changed)
+  - kubectl rollout restart deployment/homeassistant -n homeassistant
+  
+  # Wait for restart to complete
+  - kubectl rollout status deployment/homeassistant -n homeassistant --timeout=300s
+  
+  # Verify the deployment
+  - kubectl get pods -n homeassistant -l app=homeassistant
+  - kubectl get ingress -n homeassistant
+  when:
+    branch:
+    - main
+    event:
+    - push
+
+# Step 5: Health check
+- name: health-check
+  image: curlimages/curl:latest
+  commands:
+  # Wait a bit for Home Assistant to fully start
+  - sleep 60
+  
+  # Check if Home Assistant is responding
+  - |
+    for i in {1..10}; do
+      if curl -f -s -o /dev/null https://home.ostbye.dev; then
+        echo "✅ Home Assistant is responding"
+        exit 0
+      fi
+      echo "Waiting for Home Assistant... ($i/10)"
+      sleep 30
+    done
+    echo "❌ Home Assistant health check failed"
+    exit 1
+  when:
+    branch:
+    - main
+    status:
+    - success
+
+# Step 6: Notify success
+- name: notify-success
+  image: plugins/webhook
+  settings:
+    urls:
+      from_secret: webhook_url
+    content_type: application/json
+    template: |
+      {
+        "text": "🏠 Home Assistant updated successfully!",
+        "details": {
+          "commit": "${DRONE_COMMIT_SHA}",
+          "branch": "${DRONE_BRANCH}",
+          "author": "${DRONE_COMMIT_AUTHOR}",
+          "url": "https://home.ostbye.dev",
+          "config_files_updated": [
+            "configuration.yaml",
+            "automations.yaml", 
+            "scripts.yaml",
+            "scenes.yaml"
+          ]
+        }
+      }
+  when:
+    branch:
+    - main
+    status:
+    - success
+
+# Step 7: Notify failure
+- name: notify-failure
+  image: plugins/webhook
+  settings:
+    urls:
+      from_secret: webhook_url
+    content_type: application/json
+    template: |
+      {
+        "text": "❌ Home Assistant deployment failed!",
+        "details": {
+          "commit": "${DRONE_COMMIT_SHA}",
+          "branch": "${DRONE_BRANCH}",
+          "author": "${DRONE_COMMIT_AUTHOR}",
+          "error": "Check Drone CI logs for details"
+        }
+      }
+  when:
+    branch:
+    - main
+    status:
+    - failure
+
+volumes:
+- name: temp-config
+  temp: {}
+
+# Trigger on main branch pushes
+trigger:
+  branch:
+  - main
+  event:
+  - push
+
+---
+# Secondary pipeline for configuration validation on PRs
+kind: pipeline
+type: kubernetes
+name: validate-pr
+
+steps:
+- name: validate-config-pr
+  image: homeassistant/home-assistant:2024.10.1
+  commands:
+  - cd /workspace
+  - cp -r config/* /config/
+  - echo "🔍 Validating Home Assistant configuration..."
+  - python -m homeassistant --script check_config --config /config
+  - echo "✅ Configuration validation passed!"
+  volumes:
+  - name: temp-config
+    path: /config
+
+- name: validate-k8s-pr
+  image: bitnami/kubectl:latest
+  commands:
+  - echo "🔍 Validating Kubernetes manifests..."
+  - kubectl apply --dry-run=client -f k8s/
+  - echo "✅ Kubernetes manifest validation passed!"
+
+volumes:
+- name: temp-config
+  temp: {}
+
+trigger:
+  event:
+  - pull_request

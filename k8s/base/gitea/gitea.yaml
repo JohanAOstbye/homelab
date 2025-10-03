@@ -1,0 +1,49 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: gitea
+  namespace: private
+spec:
+  repo: https://dl.gitea.io/charts/
+  chart: gitea
+  targetNamespace: private
+  valuesContent: |-
+    gitea:
+      config:
+        APP_NAME: "Johan's Homelab Git"
+        server:
+          ROOT_URL: https://git.ostbye.dev
+          SSH_PORT: 2222
+          SSH_LISTEN_PORT: 2222
+          DISABLE_REGISTRATION: true
+        security:
+          INSTALL_LOCK: true
+        database:
+          DB_TYPE: sqlite3
+        log:
+          LEVEL: Info
+        mailer:
+          ENABLED: false
+    service:
+      http:
+        type: ClusterIP
+        port: 3000
+      ssh:
+        type: LoadBalancer
+        port: 2222
+        annotations:
+          metallb.universe.tf/loadBalancerIPs: "192.168.1.100" # Change to your desired IP
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: "local-path"
+    postgresql:
+      enabled: false
+    mysql:
+      enabled: false
+    mariadb:
+      enabled: false
+    redis-cluster:
+      enabled: false
+    redis:
+      enabled: false

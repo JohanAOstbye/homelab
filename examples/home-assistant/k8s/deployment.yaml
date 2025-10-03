@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homeassistant
+  namespace: homeassistant
+  labels:
+    app: homeassistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Important for Home Assistant - no concurrent instances
+  selector:
+    matchLabels:
+      app: homeassistant
+  template:
+    metadata:
+      labels:
+        app: homeassistant
+    spec:
+      # Use host network for device discovery
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      
+      # Security context
+      securityContext:
+        fsGroup: 1000
+        
+      containers:
+      - name: homeassistant
+        image: homeassistant/home-assistant:2024.10.1
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - containerPort: 8123
+          name: http
+          protocol: TCP
+        
+        env:
+        - name: TZ
+          value: "Europe/Oslo"
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "300m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        
+        volumeMounts:
+        - name: config-storage
+          mountPath: /config
+        - name: config-files
+          mountPath: /config/configuration.yaml
+          subPath: configuration.yaml
+        - name: config-files
+          mountPath: /config/automations.yaml
+          subPath: automations.yaml
+        - name: config-files
+          mountPath: /config/scripts.yaml
+          subPath: scripts.yaml
+        - name: config-files
+          mountPath: /config/scenes.yaml
+          subPath: scenes.yaml
+        # Mount for USB devices (Zigbee/Z-Wave dongles)
+        - name: usb-devices
+          mountPath: /dev
+        
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8123
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+          
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8123
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+          
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false  # HA needs to write to filesystem
+          runAsNonRoot: false  # HA container runs as root for device access
+          capabilities:
+            add:
+            - NET_ADMIN  # For network device discovery
+            - NET_RAW    # For ping and network scanning
+      
+      volumes:
+      - name: config-storage
+        persistentVolumeClaim:
+          claimName: homeassistant-config
+      - name: config-files
+        configMap:
+          name: homeassistant-config
+      - name: usb-devices
+        hostPath:
+          path: /dev
+          type: Directory
+      
+      # Allow scheduling on nodes with USB devices
+      nodeSelector:
+        kubernetes.io/os: linux
+      
+      restartPolicy: Always

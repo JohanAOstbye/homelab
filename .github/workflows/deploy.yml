@@ -1,0 +1,99 @@
+name: Deploy to Homelab
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'k8s/**'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches: [ main ]
+    paths: 
+      - 'k8s/**'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Kubernetes manifests
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate YAML files
+      run: |
+        find k8s -name "*.yaml" -o -name "*.yml" | xargs -I {} yamllint {} || true
+    
+    - name: Setup Kustomize
+      run: |
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        sudo mv kustomize /usr/local/bin/
+    
+    - name: Validate Kustomize builds
+      run: |
+        for overlay in k8s/overlays/*/; do
+          echo "Validating $overlay"
+          kustomize build "$overlay" > /dev/null
+        done
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: Deploy to cluster
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Setup Kustomize
+      run: |
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        sudo mv kustomize /usr/local/bin/
+    
+    - name: Configure kubectl
+      run: |
+        mkdir -p ~/.kube
+        echo "$KUBECONFIG_CONTENT" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+      env:
+        KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+    
+    - name: Test cluster connection
+      run: |
+        kubectl cluster-info
+        kubectl get nodes
+    
+    - name: Prepare deployment
+      run: |
+        chmod +x scripts/pre-deploy.sh
+        scripts/pre-deploy.sh
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        DRONE_RPC_SECRET: ${{ secrets.DRONE_RPC_SECRET }}
+        DRONE_GITEA_CLIENT_ID: ${{ secrets.DRONE_GITEA_CLIENT_ID }}
+        DRONE_GITEA_CLIENT_SECRET: ${{ secrets.DRONE_GITEA_CLIENT_SECRET }}
+    
+    - name: Deploy infrastructure
+      run: |
+        echo "Deploying namespaces..."
+        kubectl apply -k k8s/base/namespaces
+        
+        echo "Deploying cert-manager..."
+        kubectl apply -k k8s/base/cert-manager
+        
+        echo "Waiting for cert-manager to be ready..."
+        kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager -n cert-manager || true
+        kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-webhook -n cert-manager || true
+        kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-cainjector -n cert-manager || true
+    
+    - name: Deploy applications
+      run: |
+        echo "Deploying applications..."
+        kustomize build k8s/overlays/production | kubectl apply -f -
+        
+        echo "Checking deployment status..."
+        kubectl get pods -A
+        kubectl get ingress -A

@@ -1,0 +1,53 @@
+# Environment files
+.env
+.env.local
+.env.production
+
+# Kubernetes temporary files
+*.tmp
+tmp/
+timestamp-patch.yaml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.bak
+*.backup
+
+# Secrets (local development)
+secrets/
+*.key
+*.pem
+*.crt
+
+# Helm charts cache
+.helm/
+
+# Kustomize build output
+build/
+dist/
+
+# Local kubeconfig files
+kubeconfig*
+config
+
+# Terraform (if added later)
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# ArgoCD (if added later)
+argocd-*

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone-runner-kube
+  namespace: private
+  labels:
+    app: drone-runner-kube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drone-runner-kube
+  template:
+    metadata:
+      labels:
+        app: drone-runner-kube
+    spec:
+      serviceAccountName: drone-runner
+      containers:
+        - name: drone-runner-kube
+          image: drone/drone-runner-kube:latest
+          env:
+            - name: DRONE_RPC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: drone-secrets
+                  key: rpc-secret
+            - name: DRONE_RPC_HOST
+              value: "drone.private.svc.cluster.local"
+            - name: DRONE_RPC_PROTO
+              value: "http"
+            - name: DRONE_NAMESPACE_DEFAULT
+              value: "private"
+            - name: DRONE_RUNNER_CAPACITY
+              value: "2"
+            - name: DRONE_RUNNER_NAME
+              value: "kube-runner"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: drone-runner
+  namespace: private
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: private
+  name: drone-runner
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "secrets"]
+    verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: drone-runner
+  namespace: private
+subjects:
+  - kind: ServiceAccount
+    name: drone-runner
+    namespace: private
+roleRef:
+  kind: Role
+  name: drone-runner
+  apiGroup: rbac.authorization.k8s.io

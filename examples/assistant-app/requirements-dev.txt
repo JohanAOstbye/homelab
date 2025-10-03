@@ -1,0 +1,6 @@
+# Development dependencies
+pytest==7.4.3
+httpx==0.25.2
+
+# Add to main requirements for testing
+fastapi[all]==0.104.1

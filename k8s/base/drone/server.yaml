@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone-server
+  namespace: private
+  labels:
+    app: drone-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drone-server
+  template:
+    metadata:
+      labels:
+        app: drone-server
+    spec:
+      containers:
+        - name: drone-server
+          image: drone/drone:2
+          ports:
+            - containerPort: 80
+              name: http
+          env:
+            - name: DRONE_GITEA_SERVER
+              value: "https://git.ostbye.dev"
+            - name: DRONE_RPC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: drone-secrets
+                  key: rpc-secret
+            - name: DRONE_SERVER_HOST
+              value: "ci.ostbye.dev"
+            - name: DRONE_SERVER_PROTO
+              value: "https"
+            - name: DRONE_USER_CREATE
+              value: "username:JohanAOstbye,admin:true"
+            - name: DRONE_GITEA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: drone-secrets
+                  key: gitea-client-id
+            - name: DRONE_GITEA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: drone-secrets
+                  key: gitea-client-secret
+            - name: DRONE_LOGS_PRETTY
+              value: "true"
+            - name: DRONE_LOGS_COLOR
+              value: "true"
+          volumeMounts:
+            - name: drone-data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: drone-data
+          persistentVolumeClaim:
+            claimName: drone-pvc

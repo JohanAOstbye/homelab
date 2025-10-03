@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: homeassistant-config
+  namespace: homeassistant
+  labels:
+    app: homeassistant
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homeassistant-config
+  namespace: homeassistant
+  labels:
+    app: homeassistant
+data:
+  configuration.yaml: |
+    # Home Assistant Configuration
+    default_config:
+
+    # Text to speech
+    tts:
+      - platform: google_translate
+
+    # Enable the frontend
+    frontend:
+      themes: !include_dir_merge_named themes
+
+    # HTTP Configuration
+    http:
+      use_x_forwarded_for: true
+      trusted_proxies:
+        - 127.0.0.1
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+
+    # Database
+    recorder:
+      db_url: sqlite:////config/home-assistant_v2.db
+      purge_keep_days: 30
+      auto_purge: true
+
+    # Logger
+    logger:
+      default: info
+      logs:
+        homeassistant.core: info
+
+    # Enable configuration UI
+    config:
+
+    # Automation and scripts
+    automation: !include automations.yaml
+    script: !include scripts.yaml
+    scene: !include scenes.yaml
+
+  automations.yaml: |
+    # Automations will be managed through the UI
+    []
+
+  scripts.yaml: |
+    # Scripts will be managed through the UI  
+    {}
+
+  scenes.yaml: |
+    # Scenes will be managed through the UI
+    []
