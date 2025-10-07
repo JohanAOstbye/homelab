@@ -1,6 +1,6 @@
 # Tailscale subnet routing for ostbye.dev domains
 # Server acts as subnet router - all Tailscale traffic appears as home network traffic
-
+---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
@@ -12,4 +12,3 @@ spec:
       # Home network only - Tailscale routes through subnet router
       - "192.168.1.0/24"      # Your home network (all Tailscale traffic routes here)
       - "127.0.0.1/32"        # Localhost for health checks
-      # No specific Tailscale IPs needed - subnet routing handles this!

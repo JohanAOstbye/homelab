@@ -1,3 +1,4 @@
+---
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
@@ -15,13 +16,23 @@ spec:
           DISABLE_REGISTRATION: true
         security:
           INSTALL_LOCK: true
-          SECRET_KEY: "CHANGE_ME_IN_PRODUCTION"
+          # SECRET_KEY will be set via environment variable from secret
         database:
           DB_TYPE: sqlite3
         log:
           LEVEL: Warn
         mailer:
           ENABLED: false
+    # Reference the Kubernetes secret for sensitive values
+    extraEnvFrom:
+      - secretRef:
+          name: gitea-secrets
+    extraEnv:
+      - name: GITEA__security__SECRET_KEY
+        valueFrom:
+          secretKeyRef:
+            name: gitea-secrets
+            key: secret-key
     service:
       http:
         type: ClusterIP
@@ -48,5 +59,6 @@ spec:
     gitea:
       admin:
         username: "admin"
-        password: "CHANGE_ME_IN_PRODUCTION"
+        existingSecret: gitea-secrets
+        secretKey: admin-password
         email: "johan@ostbye.dev"

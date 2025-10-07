@@ -1,0 +1,9 @@
+extends: default
+
+rules:
+  line-length:
+    max: 120  # Allow longer lines (default is 80)
+    level: warning  # Make it a warning instead of error
+  
+  comments:
+    min-spaces-from-content: 1

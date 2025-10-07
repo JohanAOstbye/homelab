@@ -1,3 +1,4 @@
+---
 apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
@@ -32,7 +33,7 @@ spec:
         type: LoadBalancer
         port: 2222
         annotations:
-          metallb.universe.tf/loadBalancerIPs: "192.168.1.100" # Change to your desired IP
+          metallb.universe.tf/loadBalancerIPs: "192.168.1.100"
     persistence:
       enabled: true
       size: 10Gi
