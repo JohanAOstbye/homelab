@@ -81,9 +81,9 @@ echo "✅ Server is now clean and ready for fresh setup"
 # SSH into your clean server
 ssh user@your-server-ip
 
-# Create setup directory
-mkdir -p ~/homelab-setup
-cd ~/homelab-setup
+# Create setup directory in a standard location
+mkdir -p /tmp/homelab-setup
+cd /tmp/homelab-setup
 
 # Download the setup script
 curl -O https://raw.githubusercontent.com/JohanAOstbye/homelab/main/scripts/setup-homelab.sh
@@ -99,6 +99,10 @@ EOF
 
 # Run the initial setup
 ./setup-homelab.sh install
+
+# Clean up after installation (optional)
+cd ~
+rm -rf /tmp/homelab-setup
 ```
 
 ### What the Setup Does
@@ -164,16 +168,33 @@ git push origin main
 
 ## 🔗 Step 5: Configure DNS Records
 
-Update your Cloudflare DNS records to point to your server:
+### **Configure Public DNS**
+Update your Cloudflare DNS records:
 
 ```bash
 # Get your server's public IP
 curl ipinfo.io/ip
 
 # Add these A records in Cloudflare:
-# git.ostbye.dev → YOUR_SERVER_IP
-# ci.ostbye.dev → YOUR_SERVER_IP
+A    git.ostbye.dev    → YOUR_PUBLIC_IP
+A    ci.ostbye.dev     → YOUR_PUBLIC_IP
 ```
+
+### **Setup Tailscale Subnet Routing**
+Configure selective routing for secure access:
+
+```bash
+# SSH to your server
+ssh user@your-server-ip
+
+# Run the subnet router setup script
+curl -s https://raw.githubusercontent.com/JohanAOstbye/homelab/main/scripts/setup-tailscale-subnet-router.sh | bash
+
+# Or manual setup:
+sudo tailscale up --advertise-routes=192.168.1.0/24 --accept-routes --accept-dns
+```
+
+**This gives you selective security:** Only `*.ostbye.dev` domains go through Tailscale, other traffic stays direct for speed. See `docs/tailscale-only-guide.md` for full details.
 
 ## ✅ Step 6: Verification
 

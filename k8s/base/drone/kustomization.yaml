@@ -6,3 +6,4 @@ resources:
   - runner.yaml
   - service.yaml
   - ingress.yaml
+  - ../tailscale-middleware.yaml

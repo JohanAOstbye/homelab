@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tailscale-proxy
+  namespace: private
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tailscale-auth
+  namespace: private
+type: Opaque
+stringData:
+  TS_AUTHKEY: "REPLACE_WITH_TAILSCALE_KEY"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale-proxy
+  namespace: private
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailscale-proxy
+  template:
+    metadata:
+      labels:
+        app: tailscale-proxy
+    spec:
+      serviceAccountName: tailscale-proxy
+      containers:
+      - name: tailscale
+        image: tailscale/tailscale:latest
+        env:
+        - name: TS_AUTHKEY
+          valueFrom:
+            secretKeyRef:
+              name: tailscale-auth
+              key: TS_AUTHKEY
+        - name: TS_HOSTNAME
+          value: "homelab-admin"
+        - name: TS_SERVE_CONFIG
+          value: |
+            {
+              "TCP": {
+                "443": {
+                  "HTTPS": true
+                }
+              },
+              "Web": {
+                "admin.ostbye.dev:443": {
+                  "Handlers": {
+                    "/": {
+                      "Proxy": "http://gitea-http.private.svc.cluster.local:3000"
+                    }
+                  }
+                }
+              }
+            }
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+        volumeMounts:
+        - name: dev-net-tun
+          mountPath: /dev/net/tun
+      volumes:
+      - name: dev-net-tun
+        hostPath:
+          path: /dev/net/tun
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tailscale-proxy
+  namespace: private
+spec:
+  selector:
+    app: tailscale-proxy
+  ports:
+  - name: https
+    port: 443
+    targetPort: 443
