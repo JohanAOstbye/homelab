@@ -5,4 +5,3 @@ kind: Kustomization
 resources:
   - gitea.yaml
   - ingress.yaml
-  - ../tailscale-middleware.yaml

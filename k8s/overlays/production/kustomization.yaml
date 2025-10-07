@@ -2,13 +2,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: private
-
 resources:
-  - ../../base/namespaces
-  - ../../base/cert-manager
-  - ../../base/gitea
-  - ../../base/drone
+  - ../../base
   - secrets.yaml
 
 secretGenerator:
@@ -23,10 +18,10 @@ secretGenerator:
       - gitea-client-id=GITEA_CLIENT_ID_PLACEHOLDER
       - gitea-client-secret=GITEA_CLIENT_SECRET_PLACEHOLDER
 
-patchesStrategicMerge:
-  - patches/drone-production.yaml
-  - patches/gitea-production.yaml
-  - timestamp-patch.yaml
+patches:
+  - path: patches/drone-production.yaml
+  - path: patches/gitea-production.yaml
+  # timestamp-patch.yaml is generated dynamically by pre-deploy.sh
 
 images:
   - name: drone/drone
