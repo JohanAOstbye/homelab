@@ -58,9 +58,10 @@ create_gitea_secrets() {
     fi
     
     # Create the gitea-secrets secret that the HelmChart expects
+    # Note: The Gitea HelmChart expects 'username' and 'password' keys
     kubectl create secret generic gitea-secrets \
-        --from-literal=secret-key="$GITEA_SECRET_KEY" \
-        --from-literal=admin-password="$GITEA_ADMIN_PASSWORD" \
+        --from-literal=username="gitea_admin" \
+        --from-literal=password="$GITEA_ADMIN_PASSWORD" \
         --namespace=private \
         --dry-run=client -o yaml | kubectl apply -f -
     
