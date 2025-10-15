@@ -1,7 +1,7 @@
 # Homelab Makefile
 # Common operations for managing your Kubernetes homelab
 
-.PHONY: help validate deploy deploy-force status clean setup-secrets check-config update check-updates git-status logs-deploy validate-yaml sync-server
+.PHONY: help validate debug-cluster fix-kubectl deploy deploy-force status clean setup-secrets check-config update check-updates git-status logs-deploy validate-yaml sync-server
 
 # Colors for output
 BLUE = \033[0;34m
@@ -17,9 +17,39 @@ help: ## Show this help message
 
 validate: ## Validate all Kubernetes manifests
 	@echo "$(BLUE)Validating Kubernetes manifests...$(NC)"
-	@find k8s -name "*.yaml" -o -name "*.yml" | xargs -I {} kubectl apply --dry-run=client -f {} > /dev/null
+	@echo "$(BLUE)Testing cluster connection first...$(NC)"
+	@if kubectl cluster-info --request-timeout=5s > /dev/null 2>&1; then \
+		echo "$(GREEN)✓ Cluster connection OK, using server-side validation$(NC)"; \
+		find k8s -name "*.yaml" -o -name "*.yml" | xargs -I {} kubectl apply --dry-run=server -f {} > /dev/null; \
+	else \
+		echo "$(YELLOW)⚠️  Cluster connection failed, using client-side validation$(NC)"; \
+		find k8s -name "*.yaml" -o -name "*.yml" | xargs -I {} kubectl apply --dry-run=client --validate=false -f {} > /dev/null; \
+	fi
+	@echo "$(BLUE)Validating kustomize builds...$(NC)"
 	@kustomize build k8s/overlays/production > /dev/null
 	@echo "$(GREEN)✓ All manifests are valid$(NC)"
+
+debug-cluster: ## Debug cluster connection issues
+	@echo "$(BLUE)Cluster Connection Diagnostics$(NC)"
+	@echo "================================"
+	@echo "$(YELLOW)Current kubectl context:$(NC)"
+	@kubectl config current-context 2>/dev/null || echo "No context set"
+	@echo ""
+	@echo "$(YELLOW)Kubectl config:$(NC)"
+	@kubectl config view --minify 2>/dev/null || echo "No config found"
+	@echo ""
+	@echo "$(YELLOW)K3s service status:$(NC)"
+	@sudo systemctl is-active k3s 2>/dev/null || echo "K3s service not active"
+	@echo ""
+	@echo "$(YELLOW)K3s kubeconfig exists:$(NC)"
+	@if [ -f /etc/rancher/k3s/k3s.yaml ]; then \
+		echo "✓ K3s kubeconfig found"; \
+	else \
+		echo "✗ K3s kubeconfig not found"; \
+	fi
+	@echo ""
+	@echo "$(YELLOW)Testing cluster connection:$(NC)"
+	@kubectl cluster-info --request-timeout=5s 2>&1 || echo "Connection failed"
 
 build: ## Build kustomize manifests without applying
 	@echo "$(BLUE)Building production manifests...$(NC)"

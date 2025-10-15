@@ -1,5 +1,0 @@
-# GitHub Actions deployment disabled - using server-side deployment instead
-# See docs/SERVER_DEPLOYMENT.md for the new deployment method
-
-# To deploy: SSH to your homelab server and run:
-# sudo /opt/homelab/scripts/deploy-server.sh
