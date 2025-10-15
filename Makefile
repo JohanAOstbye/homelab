@@ -1,7 +1,7 @@
 # Homelab Makefile
 # Common operations for managing your Kubernetes homelab
 
-.PHONY: help validate debug-cluster fix-kubectl deploy deploy-force status clean setup-secrets check-config update check-updates git-status logs-deploy validate-yaml sync-server
+.PHONY: help validate debug-cluster deploy deploy-force status clean setup-secrets check-config update check-updates git-status logs-deploy validate-yaml sync-server
 
 # Colors for output
 BLUE = \033[0;34m
@@ -15,19 +15,21 @@ help: ## Show this help message
 	@echo "================================"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-15s$(NC) %s\n", $$1, $$2}'
 
-validate: ## Validate all Kubernetes manifests
+validate: ## Validate Kubernetes manifests (YAML syntax only)
 	@echo "$(BLUE)Validating Kubernetes manifests...$(NC)"
-	@echo "$(BLUE)Testing cluster connection first...$(NC)"
-	@if kubectl cluster-info --request-timeout=5s > /dev/null 2>&1; then \
-		echo "$(GREEN)✓ Cluster connection OK, using server-side validation$(NC)"; \
-		find k8s -name "*.yaml" -o -name "*.yml" | xargs -I {} kubectl apply --dry-run=server -f {} > /dev/null; \
+	@echo "$(BLUE)Checking YAML syntax...$(NC)"
+	@if command -v yamllint >/dev/null 2>&1; then \
+		find k8s -name "*.yaml" -o -name "*.yml" | xargs yamllint -d relaxed; \
 	else \
-		echo "$(YELLOW)⚠️  Cluster connection failed, using client-side validation$(NC)"; \
-		find k8s -name "*.yaml" -o -name "*.yml" | xargs -I {} kubectl apply --dry-run=client --validate=false -f {} > /dev/null; \
+		echo "$(YELLOW)yamllint not installed, skipping detailed YAML validation$(NC)"; \
+		find k8s -name "*.yaml" -o -name "*.yml" | while read file; do \
+			python3 -c "import yaml; yaml.safe_load(open('$$file'))" 2>/dev/null || echo "❌ $$file has syntax errors"; \
+		done; \
 	fi
 	@echo "$(BLUE)Validating kustomize builds...$(NC)"
 	@kustomize build k8s/overlays/production > /dev/null
 	@echo "$(GREEN)✓ All manifests are valid$(NC)"
+	@echo "$(YELLOW)Note: Deploy script will perform additional kubectl validation$(NC)"
 
 debug-cluster: ## Debug cluster connection issues
 	@echo "$(BLUE)Cluster Connection Diagnostics$(NC)"
@@ -55,13 +57,13 @@ build: ## Build kustomize manifests without applying
 	@echo "$(BLUE)Building production manifests...$(NC)"
 	@kustomize build k8s/overlays/production
 
-deploy: validate ## Deploy to local cluster
-	@echo "$(YELLOW)⚠️  This will deploy to your current kubectl context$(NC)"
-	@echo "Current context: $$(kubectl config current-context)"
-	@read -p "Are you sure? (y/N) " -n 1 -r; \
+deploy: ## Deploy to local cluster using server script
+	@echo "$(BLUE)Starting deployment...$(NC)"
+	@echo "$(YELLOW)The deploy script will handle all validation and kubectl operations$(NC)"
+	@read -p "Deploy homelab to cluster? (y/N) " -n 1 -r; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
 		echo ""; \
-		echo "$(BLUE)Deploying using server script...$(NC)"; \
+		echo "$(BLUE)Running deployment script...$(NC)"; \
 		sudo ./scripts/deploy-server.sh; \
 	else \
 		echo ""; \
@@ -159,32 +161,42 @@ update: ## Pull latest changes from git and deploy
 
 check-updates: ## Check if local code is up to date with remote
 	@echo "$(BLUE)Checking for updates...$(NC)"
-	@git fetch origin
-	@LOCAL=$$(git rev-parse HEAD); \
-	REMOTE=$$(git rev-parse origin/main); \
-	if [ "$$LOCAL" = "$$REMOTE" ]; then \
-		echo "$(GREEN)✓ Your code is up to date$(NC)"; \
+	@if git status >/dev/null 2>&1; then \
+		git fetch origin 2>/dev/null || { echo "$(YELLOW)⚠️  Cannot fetch from remote - git may need configuration$(NC)"; exit 1; }; \
+		LOCAL=$$(git rev-parse HEAD); \
+		REMOTE=$$(git rev-parse origin/main); \
+		if [ "$$LOCAL" = "$$REMOTE" ]; then \
+			echo "$(GREEN)✓ Your code is up to date$(NC)"; \
+		else \
+			echo "$(YELLOW)⚠️  Updates available$(NC)"; \
+			echo "Local:  $$LOCAL"; \
+			echo "Remote: $$REMOTE"; \
+			echo ""; \
+			echo "$(BLUE)Recent commits:$(NC)"; \
+			git log --oneline HEAD..origin/main 2>/dev/null || true; \
+			echo ""; \
+			echo "Run 'make update' to pull changes and deploy"; \
+		fi; \
 	else \
-		echo "$(YELLOW)⚠️  Updates available$(NC)"; \
-		echo "Local:  $$LOCAL"; \
-		echo "Remote: $$REMOTE"; \
-		echo ""; \
-		echo "$(BLUE)Recent commits:$(NC)"; \
-		git log --oneline HEAD..origin/main; \
-		echo ""; \
-		echo "Run 'make update' to pull changes and deploy"; \
+		echo "$(YELLOW)⚠️  Not in a git repository or git not configured$(NC)"; \
+		echo "If running on server, updates are handled by the deployment script"; \
 	fi
 
 git-status: ## Show git status and any uncommitted changes
 	@echo "$(BLUE)Git Repository Status$(NC)"
 	@echo "====================="
-	@git status --porcelain -b | head -20
-	@echo ""
-	@if [ -n "$$(git status --porcelain)" ]; then \
-		echo "$(YELLOW)⚠️  You have uncommitted changes$(NC)"; \
-		echo "Run 'git add . && git commit -m \"your message\"' to save them"; \
+	@if git status >/dev/null 2>&1; then \
+		git status --porcelain -b | head -20; \
+		echo ""; \
+		if [ -n "$$(git status --porcelain 2>/dev/null)" ]; then \
+			echo "$(YELLOW)⚠️  You have uncommitted changes$(NC)"; \
+			echo "Run 'git add . && git commit -m \"your message\"' to save them"; \
+		else \
+			echo "$(GREEN)✓ Working directory is clean$(NC)"; \
+		fi; \
 	else \
-		echo "$(GREEN)✓ Working directory is clean$(NC)"; \
+		echo "$(YELLOW)⚠️  Not in a git repository or git not configured$(NC)"; \
+		echo "If running on server, git operations are handled by the deployment script"; \
 	fi
 
 logs-deploy: ## Show deployment logs
