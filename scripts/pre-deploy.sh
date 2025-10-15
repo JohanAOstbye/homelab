@@ -48,6 +48,25 @@ EOF
     log "Timestamp patch created"
 }
 
+# Create Gitea secrets that the HelmChart expects
+create_gitea_secrets() {
+    log "Creating Gitea secrets..."
+    
+    if [ -z "$GITEA_SECRET_KEY" ] || [ -z "$GITEA_ADMIN_PASSWORD" ]; then
+        echo "ERROR: GITEA_SECRET_KEY and GITEA_ADMIN_PASSWORD must be set in /etc/homelab/config"
+        exit 1
+    fi
+    
+    # Create the gitea-secrets secret that the HelmChart expects
+    kubectl create secret generic gitea-secrets \
+        --from-literal=secret-key="$GITEA_SECRET_KEY" \
+        --from-literal=admin-password="$GITEA_ADMIN_PASSWORD" \
+        --namespace=private \
+        --dry-run=client -o yaml | kubectl apply -f -
+    
+    log "Gitea secrets created"
+}
+
 # Replace secret placeholders with actual values from environment
 update_secrets() {
     log "Updating secrets in kustomization..."
@@ -85,6 +104,7 @@ validate_manifests() {
 
 # Main execution
 update_timestamp
+create_gitea_secrets
 update_secrets
 validate_manifests
 
