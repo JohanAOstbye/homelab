@@ -176,6 +176,15 @@ deploy_infrastructure() {
     log "Deploying namespaces..."
     kubectl apply -k k8s/base/namespaces
     
+    # Ensure Traefik CRDs are available
+    log "Checking Traefik CRDs..."
+    if ! kubectl get crd middlewares.traefik.containo.us &> /dev/null; then
+        log "Installing Traefik CRDs..."
+        kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10/docs/content/reference/dynamic-configuration/kubernetes-crd.yml || warn "Failed to install Traefik CRDs"
+    else
+        log "Traefik CRDs already present"
+    fi
+    
     # Deploy cert-manager
     log "Deploying cert-manager..."
     kubectl apply -k k8s/base/cert-manager
