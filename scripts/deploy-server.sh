@@ -44,9 +44,11 @@ check_prerequisites() {
         error "K3s is not installed or not in PATH"
     fi
     
-    # Create kubectl alias for k3s kubectl
+    # Set up kubectl function to use k3s
     log "Using K3s built-in kubectl..."
-    alias kubectl="k3s kubectl"
+    kubectl() {
+        k3s kubectl "$@"
+    }
     
     # Check if kustomize is available
     if ! command -v kustomize &> /dev/null; then
@@ -60,7 +62,7 @@ check_prerequisites() {
     fi
     
     # Check K3s cluster connectivity
-    if ! kubectl cluster-info &> /dev/null; then
+    if ! k3s kubectl cluster-info &> /dev/null; then
         error "Cannot connect to K3s cluster. Is K3s running?"
     fi
     
