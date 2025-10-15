@@ -1,6 +1,6 @@
 # Homelab Kubernetes GitOps Setup
 
-This repository contains the Kubernetes configuration for Johan's homelab, designed for deployment via GitOps with GitHub Actions.
+This repository contains the Kubernetes configuration for Johan's homelab, designed for server-side GitOps deployment.
 
 ## 🏗️ Architecture
 
@@ -12,7 +12,7 @@ This repository contains the Kubernetes configuration for Johan's homelab, desig
 - **Kustomize** - Configuration management
 
 ### GitOps & CI/CD
-- **GitHub Actions** - GitOps deployment (deploys infrastructure changes)
+- **Server-side deployment** - Local GitOps deployment script (see `docs/SERVER_DEPLOYMENT.md`)
 - **Gitea** - Self-hosted Git service (for your projects)
 - **Drone CI** - Continuous Integration (builds/tests your projects)
 

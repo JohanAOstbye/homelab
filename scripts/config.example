@@ -1,0 +1,10 @@
+# Homelab Configuration
+# Copy this file to /etc/homelab/config and fill in your actual values
+
+# Cloudflare API Token
+export CLOUDFLARE_API_TOKEN="your-cloudflare-api-token-here"
+
+# Drone CI Secrets
+export DRONE_RPC_SECRET="your-drone-rpc-secret-here"
+export DRONE_GITEA_CLIENT_ID="your-gitea-client-id-here"
+export DRONE_GITEA_CLIENT_SECRET="your-gitea-client-secret-here"
