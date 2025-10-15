@@ -69,8 +69,15 @@ check_prerequisites() {
         error "git is not installed"
     fi
     
-    # Check K3s cluster connectivity
-    if ! k3s kubectl cluster-info &> /dev/null; then
+    # Debug: Check what server kubectl is trying to connect to
+    log "Checking kubectl configuration..."
+    kubectl config view --minify | grep server: | tee -a "$LOG_FILE" || true
+    
+    # Check K3s cluster connectivity using local kubeconfig
+    log "Testing cluster connectivity..."
+    if ! kubectl cluster-info --request-timeout=10s &> /dev/null; then
+        log "Cluster connectivity test failed. Checking K3s service status..."
+        systemctl is-active k3s | tee -a "$LOG_FILE" || true
         error "Cannot connect to K3s cluster. Is K3s running?"
     fi
     
