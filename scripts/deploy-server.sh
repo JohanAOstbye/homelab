@@ -1,20 +1,8 @@
 #!/bin/bash
 set -e
 
-# Homelab Deploy Scri    # Use K3s built-in kubectl (no separate kubectl needed)
-    if ! command -v k3s &> /dev/null; then
-        error "K3s is not installed or not in PATH"
-    fi
-    
-    # Create kubectl alias for k3s kubectl
-    log "Using K3s built-in kubectl..."
-    alias kubectl="k3s kubectl"
-    
-    # Check if kustomize is available
-    if ! command -v kustomize &> /dev/null; then
-        log "kustomize not found, installing..."
-        install_kustomize
-    fiscript pulls the latest changes and deploys to the local K3s cluster
+# Homelab Deploy Script
+# This script pulls the latest changes and deploys to the local K3s cluster
 
 REPO_DIR="/opt/homelab"
 BRANCH="main"
@@ -51,10 +39,14 @@ check_prerequisites() {
         error "This script must be run as root or with sudo"
     fi
     
-    # Check if kubectl is available
-    if ! command -v kubectl &> /dev/null; then
-        error "kubectl is not installed or not in PATH"
+    # Use K3s built-in kubectl (no separate kubectl needed)
+    if ! command -v k3s &> /dev/null; then
+        error "K3s is not installed or not in PATH"
     fi
+    
+    # Create kubectl alias for k3s kubectl
+    log "Using K3s built-in kubectl..."
+    alias kubectl="k3s kubectl"
     
     # Check if kustomize is available
     if ! command -v kustomize &> /dev/null; then
