@@ -44,8 +44,16 @@ check_prerequisites() {
         error "K3s is not installed or not in PATH"
     fi
     
-    # Set up kubectl function to use k3s
-    log "Using K3s built-in kubectl..."
+    # Configure kubectl to use local K3s server
+    log "Configuring kubectl for local K3s server..."
+    if [[ -f /etc/rancher/k3s/k3s.yaml ]]; then
+        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        log "Using K3s kubeconfig: $KUBECONFIG"
+    else
+        error "K3s kubeconfig not found at /etc/rancher/k3s/k3s.yaml"
+    fi
+    
+    # Set up kubectl function to use local config
     kubectl() {
         k3s kubectl "$@"
     }
