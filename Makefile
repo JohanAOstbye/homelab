@@ -60,15 +60,17 @@ build: ## Build kustomize manifests without applying
 deploy: ## Deploy to local cluster using server script
 	@echo "$(BLUE)Starting deployment...$(NC)"
 	@echo "$(YELLOW)The deploy script will handle all validation and kubectl operations$(NC)"
-	@read -p "Deploy homelab to cluster? (y/N) " -n 1 -r; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo ""; \
-		echo "$(BLUE)Running deployment script...$(NC)"; \
-		sudo ./scripts/deploy-server.sh; \
-	else \
-		echo ""; \
-		echo "$(YELLOW)Deployment cancelled$(NC)"; \
-	fi
+	@printf "Deploy homelab to cluster? (y/N) "; \
+	read REPLY; \
+	case "$$REPLY" in \
+		[Yy]|[Yy][Ee][Ss]) \
+			echo "$(BLUE)Running deployment script...$(NC)"; \
+			sudo ./scripts/deploy-server.sh; \
+			;; \
+		*) \
+			echo "$(YELLOW)Deployment cancelled$(NC)"; \
+			;; \
+	esac
 
 deploy-force: ## Deploy without confirmation (for scripts)
 	@echo "$(BLUE)Deploying to cluster...$(NC)"
@@ -85,14 +87,18 @@ status: ## Show cluster status
 
 clean: ## Clean up deployed resources
 	@echo "$(RED)⚠️  This will remove all homelab resources$(NC)"
-	@read -p "Are you sure? (y/N) " -n 1 -r; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo ""; \
-		./scripts/local-deploy.sh cleanup; \
-	else \
-		echo ""; \
-		echo "$(YELLOW)Cleanup cancelled$(NC)"; \
-	fi
+	@printf "Are you sure? (y/N) "; \
+	read REPLY; \
+	case "$$REPLY" in \
+		[Yy]|[Yy][Ee][Ss]) \
+			echo ""; \
+			./scripts/local-deploy.sh cleanup; \
+			;; \
+		*) \
+			echo ""; \
+			echo "$(YELLOW)Cleanup cancelled$(NC)"; \
+			;; \
+	esac
 
 setup-secrets: ## Set up secrets configuration for server deployment
 	@echo "$(BLUE)Setting up server deployment secrets...$(NC)"

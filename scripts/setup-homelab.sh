@@ -190,7 +190,7 @@ display_next_steps() {
     echo "   - git.ostbye.dev → $(curl -s ipinfo.io/ip)"
     echo "   - ci.ostbye.dev → $(curl -s ipinfo.io/ip)"
     echo
-    echo "3. Push your k8s manifests to trigger GitHub Actions deployment"
+    echo "3. Deploy your manifests using: make deploy"
     echo
     echo "4. Access your services:"
     echo "   - Gitea: https://git.ostbye.dev"

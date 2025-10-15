@@ -17,12 +17,11 @@ This repository contains the Kubernetes configuration for Johan's homelab, desig
 - **Drone CI** - Continuous Integration (builds/tests your projects)
 
 ### Optional Future Additions
-- **ArgoCD** - Advanced GitOps (alternative to GitHub Actions for cluster management)
+- **ArgoCD** - Advanced GitOps with web UI and monitoring
 
 ## 📁 Directory Structure
 
 ```
-├── .github/workflows/     # GitHub Actions workflows
 ├── k8s/
 │   ├── base/             # Base Kubernetes manifests
 │   │   ├── namespaces/
@@ -31,8 +30,9 @@ This repository contains the Kubernetes configuration for Johan's homelab, desig
 │   │   └── drone/
 │   └── overlays/         # Environment-specific overlays
 │       └── production/
-├── scripts/              # Utility scripts
+├── scripts/              # Deployment and utility scripts
 ├── docs/                 # Documentation
+├── Makefile              # Main management interface
 └── src/                  # Environment variables (.env)
 ```
 
@@ -47,27 +47,27 @@ This repository contains the Kubernetes configuration for Johan's homelab, desig
 
 ### Fresh Installation
 
-For a complete fresh installation, follow the **[Initial Setup Guide](docs/initial-setup-guide.md)** which includes:
+For a complete fresh installation, follow the **[Server Deployment Guide](docs/SERVER_DEPLOYMENT.md)** which includes:
 
 1. **Server cleanup** (removing any existing setup)
-2. **Fresh K3s installation** with all prerequisites
-3. **GitHub Secrets configuration**
-4. **Automated deployment** via GitHub Actions
+2. **Fresh K3s installation** with all prerequisites  
+3. **Server configuration** and secrets setup
+4. **Server-side deployment** via deployment script
 5. **DNS and SSL setup**
 6. **Service configuration** (Gitea + Drone)
 
-### GitHub Secrets Required
+### Server Configuration Required
+
+Configure secrets on your server at `/etc/homelab/config`:
 
 ```bash
-# Your K3s kubeconfig (base64 encoded)
-KUBECONFIG
-
-# Cloudflare API token
-CLOUDFLARE_API_TOKEN
+# Cloudflare API token for DNS challenges
+export CLOUDFLARE_API_TOKEN="your-token-here"
 
 # Drone CI secrets
-DRONE_RPC_SECRET
-DRONE_GITEA_CLIENT_ID  
+export DRONE_RPC_SECRET="your-rpc-secret"
+export DRONE_GITEA_CLIENT_ID="your-client-id"
+export DRONE_GITEA_CLIENT_SECRET="your-client-secret"  
 DRONE_GITEA_CLIENT_SECRET
 ```
 
@@ -103,25 +103,24 @@ Update your Cloudflare DNS to point to your server:
 - `git.ostbye.dev` → Your server IP
 - `ci.ostbye.dev` → Your server IP
 
-## 🤔 GitOps vs CI/CD - What's the Difference?
+## 🤔 Server-side Deployment vs CI/CD - What's the Difference?
 
 ### Current Setup
-- **GitHub Actions** = GitOps (deploys **infrastructure** changes to your Kubernetes cluster)
-- **Drone CI** = CI/CD (builds, tests, and deploys **your application code**)
+- **Server Deployment Script** = Infrastructure deployment (deploys **infrastructure** changes to your Kubernetes cluster)
+- **Drone CI** = Application CI/CD (builds, tests, and deploys **your application code**)
 
 ### Example Workflow
-1. You push infrastructure changes (new services, config updates) → **GitHub Actions** deploys to K8s
+1. You update infrastructure (new services, config updates) → Run `make deploy` on server to deploy to K8s
 2. You push application code to Gitea → **Drone CI** builds, tests, and deploys your app
 
 ### ArgoCD Alternative (Future)
-- **ArgoCD** could replace **GitHub Actions** for GitOps (not Drone CI)
-- ArgoCD provides advanced features like:
+- **ArgoCD** could replace **server deployment** for advanced GitOps features:
   - Real-time sync monitoring
   - Rollback capabilities
   - Multi-cluster management
   - Web UI for deployment status
 
-**TL;DR: GitHub Actions and ArgoCD both do GitOps. Drone CI does application CI/CD. They serve different purposes.**
+**TL;DR: Server deployment handles infrastructure. Drone CI does application CI/CD. They serve different purposes.**
 
 ## 📂 Understanding Kustomize Overlays
 
@@ -250,77 +249,51 @@ kustomize build k8s/base/drone
 
 📚 **For a complete deep-dive into overlays, see the [Kustomize Overlays Guide](docs/kustomize-overlays-guide.md)**
 
-## � How GitHub Actions Accesses Your K3s Cluster
+## 🚀 Server-Side Deployment Process
 
-### The Connection Method
-GitHub Actions connects to your K3s cluster using the **KUBECONFIG secret**, which contains:
+### How It Works
+The deployment script runs directly on your K3s server, providing a secure and simple approach:
 
-1. **Cluster endpoint** - Your server's Tailscale IP (e.g., `100.x.x.x:6443`)
-2. **Client certificate** - Authenticates GitHub Actions as a legitimate user
-3. **Client key** - Private key for the certificate
-4. **Cluster CA certificate** - Verifies your cluster's identity
+1. **Clone/Update** - Downloads latest code from GitHub
+2. **Validate** - Checks YAML syntax and Kustomize builds
+3. **Apply** - Uses local kubectl to deploy to K3s cluster
+4. **Verify** - Confirms deployment status
 
-### Security Flow
+### Security Benefits
+- **No external access** - No need for GitHub to access your cluster
+- **Local authentication** - Uses K3s's built-in kubeconfig
+- **Full control** - You control when deployments happen
+- **Audit trail** - All deployments logged locally
+
+### Deployment Commands
 ```bash
-# 1. GitHub Actions runner gets the secret
-KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+# Deploy with confirmation
+make deploy
 
-# 2. Decodes and creates kubeconfig file
-echo "$KUBECONFIG_CONTENT" | base64 -d > ~/.kube/config
+# Deploy without confirmation (for automation)
+make deploy-force
 
-# 3. kubectl uses this to connect via Tailscale network
-kubectl cluster-info  # Connects to 100.x.x.x:6443
+# Check deployment status
+make status
+
+# View deployment logs
+make logs-deploy
 ```
 
-### Security Considerations
-
-**✅ Secure Aspects:**
-- **Tailscale network** - Only accessible via your private Tailscale network
-- **Encrypted secrets** - GitHub encrypts secrets at rest and in transit
-- **Limited scope** - Kubeconfig only has access to your cluster
-- **Audit trail** - All deployments are logged in GitHub Actions
-
-**⚠️ Security Trade-offs:**
-- **Cloud dependency** - Relies on GitHub's security
-- **Broad cluster access** - Kubeconfig typically has admin privileges
-- **Secret exposure risk** - If GitHub account is compromised
-
-### Alternative: More Secure Approaches
-
-**Option 1: Limited Service Account (Recommended Improvement)**
-```bash
-# Create limited service account instead of using admin kubeconfig
-kubectl create serviceaccount github-actions -n kube-system
-kubectl create clusterrolebinding github-actions --clusterrole=cluster-admin --serviceaccount=kube-system:github-actions
-
-# Use this token instead of full kubeconfig
-kubectl create token github-actions -n kube-system --duration=8760h
-```
-
-**Option 2: ArgoCD Pull-based GitOps**
-- ArgoCD runs **inside** your cluster
-- **Polls** GitHub for changes (no inbound access needed)
-- More secure but requires more setup
-
-**Option 3: Self-hosted GitHub Runner**
-- Run GitHub Actions runner **on your server**
-- No network access needed from GitHub's cloud
-- Requires runner maintenance
-
-## �🔒 Current Security Features
+## 🔒 Current Security Features
 
 - **Automated SSL certificates** via Let's Encrypt
 - **RBAC** configured for service accounts
 - **Network policies** (can be added)
 - **Pod security standards** (can be enforced)
-- **Secret management** via Kustomize + GitHub Secrets
+- **Secret management** via server configuration files
 
-## 🚦 Deployment Process
+## 🚦 Deployment Workflow
 
-1. **Push to main** → Triggers GitHub Actions
-2. **Validate** → YAML linting and Kustomize validation
-3. **Deploy** → Apply changes to K3s cluster
-4. **Verify** → Check deployment status
+1. **Update code** → Make changes to manifests or configuration
+2. **Push to GitHub** → Code is available for server to pull
+3. **Deploy on server** → Run `make deploy` to apply changes
+4. **Verify** → Check deployment status with `make status`
 
 ## 🛠️ Troubleshooting
 
@@ -361,7 +334,7 @@ This example demonstrates how applications in your Gitea repositories get automa
 - [ ] Add backup solutions
 - [ ] Implement network policies
 - [ ] Add more applications (Nextcloud, etc.)
-- [ ] Optional: Replace GitHub Actions with ArgoCD for advanced GitOps features
+- [ ] Optional: Add ArgoCD for advanced GitOps features
 
 ## 🤝 Contributing
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Pre-deploy script to update timestamps and prepare manifests
-# This script is called by GitHub Actions before applying manifests
+# This script is called by the deployment script before applying manifests
 
 set -e
 
