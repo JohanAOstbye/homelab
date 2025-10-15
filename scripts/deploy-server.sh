@@ -180,7 +180,10 @@ deploy_infrastructure() {
     log "Checking Traefik CRDs..."
     if ! kubectl get crd middlewares.traefik.containo.us &> /dev/null; then
         log "Installing Traefik CRDs..."
-        kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10/docs/content/reference/dynamic-configuration/kubernetes-crd.yml || warn "Failed to install Traefik CRDs"
+        kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.5/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml || warn "Failed to install Traefik CRDs"
+        
+        log "Installing Traefik RBAC..."
+        kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.5/docs/content/reference/dynamic-configuration/kubernetes-crd-rbac.yml || warn "Failed to install Traefik RBAC"
     else
         log "Traefik CRDs already present"
     fi
