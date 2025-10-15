@@ -178,7 +178,7 @@ deploy_infrastructure() {
     
     # Ensure Traefik CRDs are available
     log "Checking Traefik CRDs..."
-    if ! kubectl get crd middlewares.traefik.containo.us &> /dev/null; then
+    if ! kubectl get crd middlewares.traefik.io &> /dev/null; then
         log "Installing Traefik CRDs..."
         kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.5/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml || warn "Failed to install Traefik CRDs"
         
