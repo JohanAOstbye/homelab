@@ -22,33 +22,44 @@ cd /opt/homelab
 # Make scripts executable
 sudo chmod +x scripts/*.sh
 
-# Copy and configure secrets
-sudo cp scripts/config.example /etc/homelab/config
+# Set up secrets configuration
+make setup-secrets
 sudo nano /etc/homelab/config  # Fill in your actual secrets
 
-# Test manual deployment
-sudo scripts/deploy-server.sh
+# Test deployment
+make deploy
 ```
 
 ### 2. Deploy Your Applications
 
+**Option A: Using Makefile (recommended)**
 ```bash
-# Deploy latest changes manually
+# Deploy with confirmation
+make deploy
+
+# Or deploy without confirmation (for scripts)
+make deploy-force
+```
+
+**Option B: Direct script**
+```bash
 sudo /opt/homelab/scripts/deploy-server.sh
 ```
 
 ### 3. Regular Deployment Workflow
 
 ```bash
-# Deploy latest changes
-sudo /opt/homelab/scripts/deploy-server.sh
+# Pull latest changes and deploy
+make update
 
-# Check deployment logs
-sudo tail -f /var/log/homelab-deploy.log
+# Check status
+make status
 
-# Check K3s status
-kubectl get pods -A
-kubectl get ingress -A
+# View deployment logs
+make logs-deploy
+
+# Validate before deploying
+make validate
 ```
 
 ## Script Features
