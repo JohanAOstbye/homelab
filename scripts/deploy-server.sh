@@ -44,11 +44,24 @@ check_prerequisites() {
         error "K3s is not installed or not in PATH"
     fi
     
-    # Configure kubectl to use local K3s server
-    log "Configuring kubectl for local K3s server..."
+    # Fix K3s kubeconfig to point to local server
+    log "Fixing K3s kubeconfig to use local server..."
     if [[ -f /etc/rancher/k3s/k3s.yaml ]]; then
-        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-        log "Using K3s kubeconfig: $KUBECONFIG"
+        # Check what server it's currently pointing to
+        CURRENT_SERVER=$(grep "server:" /etc/rancher/k3s/k3s.yaml | awk '{print $2}')
+        log "K3s kubeconfig currently points to: $CURRENT_SERVER"
+        
+        # If it's pointing to Tailscale IP, fix it to local
+        if [[ "$CURRENT_SERVER" == *"100.70.17.19"* ]]; then
+            log "Fixing kubeconfig to use local server..."
+            # Create a corrected kubeconfig
+            sed 's|https://100.70.17.19:6443|https://127.0.0.1:6443|g' /etc/rancher/k3s/k3s.yaml > /tmp/k3s-local.yaml
+            export KUBECONFIG=/tmp/k3s-local.yaml
+            log "Using corrected local kubeconfig"
+        else
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+            log "Using existing kubeconfig: $KUBECONFIG"
+        fi
     else
         error "K3s kubeconfig not found at /etc/rancher/k3s/k3s.yaml"
     fi
