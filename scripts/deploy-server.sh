@@ -97,6 +97,20 @@ check_prerequisites() {
     success "Prerequisites check passed"
 }
 
+load_environment() {
+    log "Loading environment variables..."
+    
+    # Load environment variables from homelab config
+    if [[ -f "/etc/homelab/config" ]]; then
+        log "Loading configuration from /etc/homelab/config"
+        source /etc/homelab/config
+        log "Environment variables loaded"
+    else
+        warn "Configuration file not found at /etc/homelab/config"
+        warn "Some features may not work without proper configuration"
+    fi
+}
+
 install_kustomize() {
     log "Installing kustomize..."
     curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
@@ -257,6 +271,7 @@ main() {
     
     # Run deployment steps
     check_prerequisites
+    load_environment
     setup_repo
     validate_manifests
     create_secrets

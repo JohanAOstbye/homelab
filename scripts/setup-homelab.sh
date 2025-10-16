@@ -206,6 +206,13 @@ if [ -f .env ]; then
     set +a
 fi
 
+# Load homelab configuration if it exists
+if [ -f /etc/homelab/config ]; then
+    set -a
+    source /etc/homelab/config
+    set +a
+fi
+
 # Main execution
 case "${1:-install}" in
     "install")
