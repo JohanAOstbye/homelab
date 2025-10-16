@@ -1,7 +1,7 @@
 # Homelab Makefile
 # Common operations for managing your Kubernetes homelab
 
-.PHONY: help validate debug-cluster deploy deploy-force status clean setup-secrets check-config update check-updates git-status logs-deploy validate-yaml sync-server
+.PHONY: help validate debug-cluster deploy deploy-force status clean setup-secrets check-config update check-updates git-status logs-deploy validate-yaml sync-server down down-all
 
 # Colors for output
 BLUE = \033[0;34m
@@ -228,3 +228,31 @@ sync-server: ## Sync changes to server repository (if running on server)
 	else \
 		echo "$(YELLOW)No /opt/homelab directory found - are you on the server?$(NC)"; \
 	fi
+
+down: ## Teardown homelab apps and infrastructure (keeps secrets)
+	@echo "$(RED)⚠️  This will remove all homelab apps and infrastructure$(NC)"
+	@printf "Teardown homelab? (y/N) "; \
+	read REPLY; \
+	case "$$REPLY" in \
+		[Yy]|[Yy][Ee][Ss]) \
+			echo "$(BLUE)Running teardown script...$(NC)"; \
+			sudo ./scripts/down-server.sh; \
+			;; \
+		*) \
+			echo "$(YELLOW)Teardown cancelled$(NC)"; \
+			;; \
+	esac
+
+down-all: ## Teardown homelab including secrets/certs
+	@echo "$(RED)⚠️  This will remove ALL homelab resources including secrets and certificates$(NC)"
+	@printf "Teardown EVERYTHING? (y/N) "; \
+	read REPLY; \
+	case "$$REPLY" in \
+		[Yy]|[Yy][Ee][Ss]) \
+			echo "$(BLUE)Running full teardown script...$(NC)"; \
+			sudo ./scripts/down-server.sh -all; \
+			;; \
+		*) \
+			echo "$(YELLOW)Teardown cancelled$(NC)"; \
+			;; \
+	esac

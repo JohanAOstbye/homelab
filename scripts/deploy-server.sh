@@ -242,15 +242,19 @@ deploy_infrastructure() {
         log "Traefik CRDs already present"
     fi
     
-    # Deploy cert-manager
-    log "Deploying cert-manager..."
-    kubectl apply -k k8s/base/cert-manager
+    # Deploy cert-manager Helm chart first (to install CRDs)
+    log "Deploying cert-manager Helm chart..."
+    kubectl apply -f k8s/base/cert-manager/cert-manager.yaml
     
     # Wait for cert-manager to be ready
     log "Waiting for cert-manager to be ready..."
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager -n cert-manager || warn "cert-manager deployment timeout"
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-webhook -n cert-manager || warn "cert-manager-webhook deployment timeout"
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-cainjector -n cert-manager || warn "cert-manager-cainjector deployment timeout"
+    
+    # Now deploy ClusterIssuers (after CRDs are available)
+    log "Deploying cert-manager ClusterIssuers..."
+    kubectl apply -f k8s/base/cert-manager/cluster-issuers.yaml
     
     success "Infrastructure deployment complete"
 }
