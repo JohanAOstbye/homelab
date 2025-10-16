@@ -100,11 +100,13 @@ check_prerequisites() {
 load_environment() {
     log "Loading environment variables..."
     
-    # Load environment variables from homelab config
+    # Load and export environment variables from homelab config
     if [[ -f "/etc/homelab/config" ]]; then
         log "Loading configuration from /etc/homelab/config"
+        set -a  # Export all variables that are set
         source /etc/homelab/config
-        log "Environment variables loaded"
+        set +a  # Stop automatic exporting
+        log "Environment variables loaded and exported"
     else
         warn "Configuration file not found at /etc/homelab/config"
         warn "Some features may not work without proper configuration"
@@ -168,9 +170,10 @@ create_secrets() {
         log "Running pre-deploy script..."
         chmod +x scripts/pre-deploy.sh
         
-        # Source environment variables if config file exists
-        if [[ -f "/etc/homelab/config" ]]; then
-            source /etc/homelab/config
+        # Environment variables should already be loaded by load_environment()
+        # Verify key variables are available
+        if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
+            warn "CLOUDFLARE_API_TOKEN not set - cert-manager may not work properly"
         fi
         
         scripts/pre-deploy.sh
