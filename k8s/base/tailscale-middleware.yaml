@@ -9,6 +9,9 @@ metadata:
 spec:
   ipWhiteList:
     sourceRange:
-      # Home network only - Tailscale routes through subnet router
-      - "192.168.1.0/24"      # Your home network (all Tailscale traffic routes here)
+      # Common home network ranges
+      - "192.168.0.0/16"      # Most home networks (192.168.x.x)
+      - "10.0.0.0/8"          # Private networks (10.x.x.x)
+      - "172.16.0.0/12"       # Private networks (172.16-31.x.x)
       - "127.0.0.1/32"        # Localhost for health checks
+      - "100.64.0.0/10"       # Tailscale IP range (100.64.x.x - 100.127.x.x)
