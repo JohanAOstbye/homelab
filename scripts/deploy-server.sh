@@ -306,8 +306,8 @@ main() {
     load_environment
     setup_repo
     validate_manifests
-    create_secrets
     deploy_infrastructure
+    create_secrets
     deploy_applications
     check_deployment_status
     cleanup
