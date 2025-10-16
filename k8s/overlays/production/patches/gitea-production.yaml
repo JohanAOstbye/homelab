@@ -17,7 +17,7 @@ spec:
           SSH_LISTEN_PORT: 2222
           DISABLE_REGISTRATION: true
         security:
-          INSTALL_LOCK: true
+          INSTALL_LOCK: false
           # SECRET_KEY will be set via environment variable from secret
         database:
           DB_TYPE: sqlite3
