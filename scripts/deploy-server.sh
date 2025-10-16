@@ -200,7 +200,12 @@ create_secrets() {
             kubectl delete secret example-secrets -n private || warn "Failed to delete example secrets"
         fi
         
-        log "Secret cleanup completed"
+        # Clean up old certificates and challenges to force recreation with fresh secret references
+        log "Cleaning up old certificates and challenges to ensure fresh secret references..."
+        kubectl delete certificates -n private --all --ignore-not-found=true || warn "Failed to delete certificates"
+        kubectl delete challenges -n private --all --ignore-not-found=true || warn "Failed to delete challenges"
+        
+        log "Secret and certificate cleanup completed"
     else
         warn "No pre-deploy script found, skipping secret creation"
     fi
