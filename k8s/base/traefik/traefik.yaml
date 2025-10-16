@@ -1,0 +1,96 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: traefik
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  repo: https://traefik.github.io/charts
+  chart: traefik
+  targetNamespace: traefik
+  valuesContent: |-
+    deployment:
+      enabled: true
+      replicas: 1
+    
+    service:
+      enabled: true
+      type: LoadBalancer
+      spec:
+        loadBalancerIP: "192.168.1.88"
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: "192.168.1.88"
+    
+    providers:
+      kubernetes:
+        enabled: true
+        endpoints:
+        - ""
+      kubernetesIngress:
+        enabled: true
+        allowExternalNameServices: true
+        allowEmptyServices: false
+        publishedService:
+          enabled: false
+      kubernetesCRD:
+        enabled: true
+        allowCrossNamespace: true
+        allowExternalNameServices: true
+        allowEmptyServices: false
+    
+    # Enable dashboard
+    api:
+      dashboard: true
+      debug: true
+    
+    # Configure entrypoints
+    entryPoints:
+      web:
+        address: ":80"
+      websecure:
+        address: ":443"
+    
+    # Enable Let's Encrypt
+    certificatesResolvers:
+      letsencrypt:
+        acme:
+          email: johan@ostbye.dev
+          storage: /data/acme.json
+          httpChallenge:
+            entryPoint: web
+    
+    # Persistent volume for Let's Encrypt certificates
+    persistence:
+      enabled: true
+      size: 128Mi
+      path: /data
+      accessMode: ReadWriteOnce
+    
+    # Security
+    securityContext:
+      capabilities:
+        drop: [ALL]
+      readOnlyRootFilesystem: true
+      runAsGroup: 65532
+      runAsNonRoot: true
+      runAsUser: 65532
+    
+    # Ports
+    ports:
+      web:
+        port: 8000
+        expose: true
+        exposedPort: 80
+        protocol: TCP
+      websecure:
+        port: 8443
+        expose: true
+        exposedPort: 443
+        protocol: TCP
+        tls:
+          enabled: true

@@ -176,6 +176,14 @@ deploy_infrastructure() {
     log "Deploying namespaces..."
     kubectl apply -k k8s/base/namespaces
     
+    # Deploy Traefik ingress controller
+    log "Deploying Traefik..."
+    kubectl apply -k k8s/base/traefik
+    
+    # Wait for Traefik to be ready
+    log "Waiting for Traefik to be ready..."
+    kubectl wait --for=condition=Available --timeout=300s deployment/traefik -n traefik || warn "Traefik deployment timeout"
+    
     # Ensure Traefik CRDs are available
     log "Checking Traefik CRDs..."
     if ! kubectl get crd middlewares.traefik.io &> /dev/null; then
