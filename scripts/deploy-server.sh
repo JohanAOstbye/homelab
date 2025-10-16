@@ -177,6 +177,30 @@ create_secrets() {
         fi
         
         scripts/pre-deploy.sh
+        
+        # Clean up old secrets that might conflict with Kustomize-generated ones
+        # This ensures all secrets are fresh and consistent on every deploy
+        log "Cleaning up old secrets to ensure fresh Kustomize-generated versions..."
+        
+        # Remove old cloudflare secret (cert-manager namespace)
+        if kubectl get secret cloudflare-api-token -n cert-manager &> /dev/null; then
+            log "Removing old cloudflare-api-token secret"
+            kubectl delete secret cloudflare-api-token -n cert-manager || warn "Failed to delete cloudflare secret"
+        fi
+        
+        # Remove old drone secrets (private namespace)
+        if kubectl get secret drone-secrets -n private &> /dev/null; then
+            log "Removing old drone-secrets secret"
+            kubectl delete secret drone-secrets -n private || warn "Failed to delete drone secrets"
+        fi
+        
+        # Remove old example secrets (private namespace)
+        if kubectl get secret example-secrets -n private &> /dev/null; then
+            log "Removing old example-secrets secret"
+            kubectl delete secret example-secrets -n private || warn "Failed to delete example secrets"
+        fi
+        
+        log "Secret cleanup completed"
     else
         warn "No pre-deploy script found, skipping secret creation"
     fi
