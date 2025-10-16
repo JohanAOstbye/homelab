@@ -60,5 +60,5 @@ spec:
       admin:
         username: "admin"
         existingSecret: gitea-secrets
-        secretKey: admin-password
+        secretKey: password
         email: "johan@ostbye.dev"
