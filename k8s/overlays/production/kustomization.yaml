@@ -11,6 +11,8 @@ secretGenerator:
     namespace: cert-manager
     literals:
       - token=CLOUDFLARE_TOKEN_PLACEHOLDER
+    options:
+      disableNameSuffixHash: true
   - name: drone-secrets
     namespace: private
     literals:
