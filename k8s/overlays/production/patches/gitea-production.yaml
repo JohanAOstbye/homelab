@@ -11,6 +11,8 @@ spec:
         APP_NAME: "Johan's Homelab Git - Production"
         server:
           ROOT_URL: https://git.ostbye.dev
+          DOMAIN: git.ostbye.dev
+          SSH_DOMAIN: git.ostbye.dev
           SSH_PORT: 2222
           SSH_LISTEN_PORT: 2222
           DISABLE_REGISTRATION: true
@@ -23,6 +25,11 @@ spec:
           LEVEL: Warn
         mailer:
           ENABLED: false
+      admin:
+        username: "admin"
+        existingSecret: gitea-secrets
+        secretKey: password
+        email: "johan@ostbye.dev"
     # Reference the Kubernetes secret for sensitive values
     extraEnvFrom:
       - secretRef:
@@ -41,7 +48,7 @@ spec:
         type: LoadBalancer
         port: 2222
         annotations:
-          metallb.universe.tf/loadBalancerIPs: "192.168.1.100"
+          metallb.universe.tf/loadBalancerIPs: "192.168.1.88"
     persistence:
       enabled: true
       size: 20Gi
@@ -56,9 +63,3 @@ spec:
       enabled: false
     redis:
       enabled: false
-    gitea:
-      admin:
-        username: "admin"
-        existingSecret: gitea-secrets
-        secretKey: password
-        email: "johan@ostbye.dev"
