@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: drone-deployer
+  namespace: git-deployed
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: git-deployed
+  name: drone-deployer-role
+rules:
+- apiGroups: ["", "apps", "extensions"]
+  resources: ["pods", "services", "deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: drone-deployer-binding
+  namespace: git-deployed
+subjects:
+- kind: ServiceAccount
+  name: drone-deployer
+  namespace: git-deployed
+roleRef:
+  kind: Role
+  name: drone-deployer-role
+  apiGroup: rbac.authorization.k8s.io

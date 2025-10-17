@@ -19,3 +19,10 @@ metadata:
   name: offline
   labels:
     app.kubernetes.io/managed-by: homelab
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: git-deployed
+  labels:
+    app.kubernetes.io/managed-by: drone

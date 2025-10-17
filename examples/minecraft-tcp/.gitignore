@@ -1,0 +1,44 @@
+# Home Assistant
+.storage/
+*.log
+*.db
+*.db-shm
+*.db-wal
+known_devices.yaml
+secrets.yaml
+ip_bans.yaml
+.google.token
+.spotify.token
+
+# Local development
+data/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup
+*.bak
+
+# Temporary files
+*.tmp
+tmp/
+
+# Custom components (if not tracking them)
+custom_components/
+!custom_components/.gitkeep
+
+# HACS
+www/community/
+
+# SSL certificates
+*.pem
+*.key
+*.csr
+*.crt
+
+# Node-RED (if using)
+flows_cred.json

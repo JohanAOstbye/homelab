@@ -1,0 +1,102 @@
+kind: pipeline
+type: kubernetes
+name: minecraft-deploy
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+  # Step 1: Validate Kubernetes manifests
+  - name: validate-k8s
+    image: bitnami/kubectl:latest
+    commands:
+    - kubectl apply --dry-run=client -f k8s/
+
+  # Step 2: Deploy/Update Minecraft Server
+  - name: deploy
+    image: bitnami/kubectl:latest
+    environment:
+      KUBECONFIG:
+        from_secret: kubeconfig
+    commands:
+    # Apply all Kubernetes manifests
+    - kubectl apply -f k8s/
+    # Wait for deployment to be ready
+    - kubectl rollout status deployment/minecraft -n minecraft --timeout=300s
+    # Restart Minecraft server to reload config (if needed)
+    - kubectl rollout restart deployment/minecraft -n minecraft
+    # Wait for restart to complete
+    - kubectl rollout status deployment/minecraft -n minecraft --timeout=300s
+    # Verify the deployment
+    - kubectl get pods -n minecraft -l app=minecraft
+    when:
+      branch:
+      - main
+      event:
+      - push
+
+  # Step 4: Notify success
+  - name: notify-success
+    image: plugins/webhook
+    settings:
+      urls:
+        from_secret: webhook_url
+      content_type: application/json
+      template: |
+        {
+          "text": "🎮 Minecraft server updated successfully!",
+          "details": {
+            "commit": "${DRONE_COMMIT_SHA}",
+            "branch": "${DRONE_BRANCH}",
+            "author": "${DRONE_COMMIT_AUTHOR}",
+            "url": "minecraft.ostbye.dev"
+          }
+        }
+    when:
+      branch:
+      - main
+      status:
+      - success
+
+  # Step 5: Notify failure
+  - name: notify-failure
+    image: plugins/webhook
+    settings:
+      urls:
+        from_secret: webhook_url
+      content_type: application/json
+      template: |
+        {
+          "text": "❌ Minecraft server deployment failed!",
+          "details": {
+            "commit": "${DRONE_COMMIT_SHA}",
+            "branch": "${DRONE_BRANCH}",
+            "author": "${DRONE_COMMIT_AUTHOR}",
+            "error": "Check Drone CI logs for details"
+          }
+        }
+    when:
+      branch:
+      - main
+      status:
+      - failure
+---
+# Secondary pipeline for Kubernetes manifest validation on PRs
+kind: pipeline
+type: kubernetes
+name: validate-pr
+
+steps:
+- name: validate-k8s-pr
+  image: bitnami/kubectl:latest
+  commands:
+  - echo "🔍 Validating Kubernetes manifests..."
+  - kubectl apply --dry-run=client -f k8s/
+  - echo "✅ Kubernetes manifest validation passed!"
+
+volumes: []
+
+trigger:
+  event:
+  - pull_request
