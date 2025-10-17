@@ -4,4 +4,4 @@ metadata:
   name: minecraft
   labels:
     app.kubernetes.io/name: minecraft
-    app.kubernetes.io/managed-by: homelab
+    app.kubernetes.io/managed-by: drone

@@ -221,6 +221,9 @@ deploy_infrastructure() {
     # Deploy namespaces first
     log "Deploying namespaces..."
     kubectl apply -k k8s/base/namespaces
+
+    log "Deploying RBAC configurations..."
+    kubectl apply -k k8s/base/rbac
     
     # Deploy Traefik ingress controller
     log "Deploying Traefik..."
