@@ -1,4 +1,4 @@
-# Role definition (shared)
+# In apps
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -9,31 +9,40 @@ rules:
     resources: ["deployments", "services", "configmaps", "secrets", "jobs"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
-# Bind Drone service account from private namespace to it
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: drone-deployer-binding
   namespace: apps
 roleRef:
-  apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: drone-deployer
+  apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
     name: default
     namespace: private
 ---
-# Repeat RoleBinding for games namespace
+# In games
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: drone-deployer
+  namespace: games
+rules:
+  - apiGroups: ["", "apps", "batch"]
+    resources: ["deployments", "services", "configmaps", "secrets", "jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: drone-deployer-binding
   namespace: games
 roleRef:
-  apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: drone-deployer
+  apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
     name: default
