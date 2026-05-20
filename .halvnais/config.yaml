@@ -1,0 +1,36 @@
+name: my one and only env:)
+config:
+  dnsZone: ostbye.dev
+  providers:
+    dns: cloudflare
+    secrets: openbao
+    hosting: local
+    expose: tunnel
+    vpn: tailscale
+    auth: keycloak
+  internalGit: gitea
+gitCreds:
+  main:
+    base: https://github.com/JohanAOstbye
+    username: JohanAOstbye
+    password_env: GIT_MAIN_PAT
+platformRepo:
+  credsRef: main
+  url: https://github.com/JohanAOstbye/halvnais.git
+  path: /
+  revision: homelab
+clusterRepo:
+  credsRef: main
+  url: https://github.com/JohanAOstbye/homelab.git
+  path: /
+  revision: main
+gitea:
+  url: https://git.ostbye.dev
+  org: johanaostbye
+  admin_username: johanaostbye
+  admin_password_secret:
+    name: gitea-admin
+    namespace: gitea
+    key: password
+containerRegistry:
+  deferred: true

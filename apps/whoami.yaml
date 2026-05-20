@@ -1,0 +1,8 @@
+name: whoami
+namespace: whoami
+source:
+  repository: https://halkeye.github.io/helm-charts
+  revision: "0.3.2"
+  chart: whoami
+  values:
+    replicaCount: 2
