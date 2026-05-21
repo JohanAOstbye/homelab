@@ -1,5 +1,6 @@
 name: my one and only env:)
 config:
+  name: homelab
   dnsZone: ostbye.dev
   providers:
     dns: cloudflare

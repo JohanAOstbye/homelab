@@ -26,12 +26,6 @@ module "halvnais" {
     pools              = {}
   }
 
-  tunnel = {
-    private = {
-        routes = ["10.64.0.0/15"]
-    }
-  }
-
   network_cidr = "10.64.0.0/15"
 
   hcloud_token                  = var.hcloud_token
