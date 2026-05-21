@@ -5,7 +5,7 @@ config:
     dns: cloudflare
     secrets: openbao
     hosting: local
-    expose: tunnel
+    expose: ddns
     vpn: tailscale
     auth: keycloak
   internalGit: gitea
