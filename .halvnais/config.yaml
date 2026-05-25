@@ -9,7 +9,7 @@ config:
     expose: ddns
     vpn: tailscale
     auth: keycloak
-  internalGit: gitea
+    git: internal
 gitCreds:
   main:
     base: https://github.com/JohanAOstbye
