@@ -1,0 +1,41 @@
+name: minecraft
+namespace: minecraft
+halvnais:
+  values:
+    name: minecraft
+    components:
+      - name: server
+        type: container
+        image:
+          repository: itzg/minecraft-server
+          tag: "2025.10.0-java21"
+        config:
+          replicas: 1
+          strategy: Recreate
+          expose:
+            - port: 25565
+              type: external
+              nodePort: 30056
+              protocol: TCP
+              srv: true
+          storage:
+            - name: data
+              size: "20Gi"
+              path: /data
+          env:
+            - name: EULA
+              value: "TRUE"
+            - name: TYPE
+              value: "PAPER"
+            - name: MEMORY
+              value: "5G"
+            - name: USE_AIKAR_FLAGS
+              value: "true"
+            - name: TZ
+              value: "Europe/Oslo"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 6Gi
+            limits:
+              memory: 6Gi
