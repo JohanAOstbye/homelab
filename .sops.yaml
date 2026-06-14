@@ -1,2 +1,7 @@
 creation_rules:
-  - age: age19880h33gdmrzgk4wacaut75pdyzyz5gnr98kaz9n09fgldhjvudqravvt9
+  - age:
+      # Johan
+      - age19880h33gdmrzgk4wacaut75pdyzyz5gnr98kaz9n09fgldhjvudqravvt9
+
+      # CI (GitHub Actions)
+      - age1764l30927u97cfqnvk56hkeepk57eelwgl6c2hs9upt842ygqsyshf4lyj

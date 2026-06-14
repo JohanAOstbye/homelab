@@ -1,0 +1,143 @@
+name: OpenTofu
+
+on:
+  push:
+    branches: [main]
+    paths: ['infra/**']
+  pull_request:
+    branches: [main]
+    paths: ['infra/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: JohanAOstbye
+          repositories: halvnais
+
+      - name: Configure git for module access
+        run: |
+          git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "git@github.com:"
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.11.6
+
+      - uses: getsops/setup-sops@v1
+
+      - name: Decrypt secrets
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          data=$(sops -d infra/.env.sops | jq -r '.data')
+          while IFS= read -r line; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            rest="${line#*=}"
+            echo "::add-mask::$rest"
+            printf '%s=%s\n' "$key" "$rest" >> "$GITHUB_ENV"
+          done <<< "$data"
+
+      - name: Init
+        working-directory: infra
+        run: tofu init
+
+      - name: Plan
+        working-directory: infra
+        run: |
+          set -o pipefail
+          tofu plan -out=tfplan -no-color 2>&1 | tee plan.txt
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infra/plan.txt', 'utf8');
+            const body = plan.length > 65000
+              ? plan.slice(0, 65000) + '\n...(truncated)'
+              : plan;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## OpenTofu Plan\n\`\`\`\n${body}\n\`\`\``,
+            });
+
+      - name: Upload plan artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: infra/tfplan
+          retention-days: 1
+
+  apply:
+    name: Apply
+    needs: plan
+    if: github.event_name != 'pull_request'
+    environment: homelab
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: JohanAOstbye
+          repositories: halvnais
+
+      - name: Configure git for module access
+        run: |
+          git config --global url."https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/".insteadOf "git@github.com:"
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.11.6
+
+      - uses: getsops/setup-sops@v1
+
+      - name: Decrypt secrets
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          data=$(sops -d infra/.env.sops | jq -r '.data')
+          while IFS= read -r line; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            key="${line%%=*}"
+            rest="${line#*=}"
+            echo "::add-mask::$rest"
+            printf '%s=%s\n' "$key" "$rest" >> "$GITHUB_ENV"
+          done <<< "$data"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: infra
+
+      - name: Init
+        working-directory: infra
+        run: tofu init
+
+      - name: Apply
+        working-directory: infra
+        run: tofu apply -auto-approve tfplan
