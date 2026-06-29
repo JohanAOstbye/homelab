@@ -1,0 +1,10 @@
+name: homeassistant
+namespace: homeassistant
+source:
+  repository: https://pajikos.github.io/home-assistant-helm-chart
+  chart: home-assistant
+  revision: "0.3.67"
+  values:
+    persistence:
+      config:
+        enabled: true
