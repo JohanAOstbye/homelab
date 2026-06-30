@@ -1,0 +1,11 @@
+name: minio
+namespace: minio
+source:
+  repository: https://charts.min.io
+  chart: minio
+  revision: "5.4.0"
+  values:
+    mode: standalone
+    persistence:
+      enabled: true
+      size: 50Gi
