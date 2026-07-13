@@ -3,5 +3,5 @@ namespace: homepage
 source:
   repository: https://jameswynn.github.io/helm-charts
   chart: homepage
-  revision: "1.5.1"
+  revision: "2.1.0"
   values: {}
