@@ -19,7 +19,7 @@ platformRepo:
   credsRef: main
   url: https://github.com/JohanAOstbye/halvnais.git
   path: /
-  revision: homelab
+  revision: test
 clusterRepo:
   credsRef: main
   url: https://github.com/JohanAOstbye/homelab.git
