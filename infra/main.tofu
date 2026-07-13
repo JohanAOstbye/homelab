@@ -37,6 +37,7 @@ module "halvnais" {
   vpn_access = {
     provider = "tailscale"
     tailscale = {
+      tags   = ["tag:halvnais"]
       routes = "10.0.0.0/8"
     }
   }
