@@ -34,4 +34,8 @@ gitea:
     namespace: core-gitea
     key: password
 containerRegistry:
-  deferred: true
+  # ghcr.io creds for pulling private platform images (dashboard, docs) published
+  # under the fork org. Bootstrap writes these into the github-creds secret.
+  server: ghcr.io
+  username: johanaostbye
+  password_env: GHCR_TOKEN
