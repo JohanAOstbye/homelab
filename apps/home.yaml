@@ -1,5 +1,13 @@
 name: home
 namespace: home
+# Homepage's Kubernetes widget needs cluster-scoped read RBAC. Opt this app's
+# per-app project into managing just those two kinds (the ClusterRole itself
+# grants only read verbs — see the repo's deploy/cluster-rbac.yaml).
+clusterResources:
+  - group: rbac.authorization.k8s.io
+    kind: ClusterRole
+  - group: rbac.authorization.k8s.io
+    kind: ClusterRoleBinding
 source:
   # Homepage dashboard defined in its own repo (config + manifests). The init
   # container in deploy/ syncs config/ into the homepage config dir. See its README.

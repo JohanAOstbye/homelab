@@ -1,0 +1,9 @@
+name: kuma
+namespace: kuma
+source:
+  # Uptime Kuma — manifests only; its data lives on a PVC. See the repo README.
+  repository: https://git.ostbye.dev/johanaostbye/kuma.git
+  revision: main
+  path: deploy
+  directory:
+    recurse: true
