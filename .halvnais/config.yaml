@@ -31,7 +31,7 @@ gitea:
   admin_username: johanaostbye
   admin_password_secret:
     name: gitea-admin
-    namespace: gitea
+    namespace: core-gitea
     key: password
 containerRegistry:
   deferred: true
