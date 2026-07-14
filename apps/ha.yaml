@@ -1,0 +1,30 @@
+name: ha
+namespace: ha
+halvnais:
+  values:
+    name: ha
+    components:
+      - name: app
+        type: container
+        image:
+          repository: ghcr.io/home-assistant/home-assistant
+          tag: "2026.7.2"
+        config:
+          # Recreate: Home Assistant uses a ReadWriteOnce config volume, so the old
+          # pod must release it before the new one starts.
+          strategy: Recreate
+          expose:
+            # Reachable only over Tailscale at ha.internal — no public DNS, no keycloak.
+            # Protected by Home Assistant's own auth.
+            - type: http-internal
+              port: 8123
+          storage:
+            - name: config
+              size: 10Gi
+              path: /config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
