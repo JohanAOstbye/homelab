@@ -9,3 +9,10 @@ source:
     persistence:
       enabled: true
       size: 50Gi
+    # The chart's default memory request is 16Gi, which cannot be scheduled on the
+    # single homelab node (~20Gi allocatable, ~10Gi already requested) — the pod sat
+    # Pending, leaving its WaitForFirstConsumer PVC unbound. Request a homelab-sized
+    # amount instead; no hard limit so it isn't OOM-killed under load.
+    resources:
+      requests:
+        memory: 512Mi
