@@ -1,36 +1,10 @@
 name: home
 namespace: home
-halvnais:
-  values:
-    name: home
-    components:
-      - name: app
-        type: container
-        image:
-          repository: ghcr.io/gethomepage/homepage
-          tag: "v1.13.2"
-        config:
-          # homepage runs as uid 1000; fsGroup lets it write the seeded config
-          # into the persistent volume on first start.
-          podSecurityContext:
-            fsGroup: 1000
-            seccompProfile:
-              type: RuntimeDefault
-          expose:
-            - type: http
-              port: 3000
-              auth: true   # login required; set auth: false to make the dashboard public
-          storage:
-            - name: config
-              size: 1Gi
-              path: /app/config
-          env:
-            # homepage rejects requests whose Host header is not allow-listed.
-            - name: HOMEPAGE_ALLOWED_HOSTS
-              value: home.ostbye.dev
-          resources:
-            requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
-              memory: 256Mi
+source:
+  # Homepage dashboard defined in its own repo (config + manifests). The init
+  # container in deploy/ syncs config/ into the homepage config dir. See its README.
+  repository: https://git.ostbye.dev/johanaostbye/home.git
+  revision: main
+  path: deploy
+  directory:
+    recurse: true
