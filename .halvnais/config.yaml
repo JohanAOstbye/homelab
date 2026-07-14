@@ -36,6 +36,7 @@ gitea:
 containerRegistry:
   # ghcr.io creds for pulling private platform images (dashboard, docs) published
   # under the fork org. Bootstrap writes these into the github-creds secret.
+  # Reuses the existing GIT_MAIN_PAT (has read:packages), so no extra token needed.
   server: ghcr.io
   username: johanaostbye
-  password_env: GHCR_TOKEN
+  password_env: GIT_MAIN_PAT
