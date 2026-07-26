@@ -1,0 +1,5 @@
+name: tailscale-exit
+namespace: tailscale-exit
+halvnais:
+  repository: https://git.ostbye.dev/johanaostbye/tailscale-exit.git
+  revision: main
