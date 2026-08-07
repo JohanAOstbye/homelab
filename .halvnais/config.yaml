@@ -2,6 +2,10 @@ name: my one and only env:)
 config:
   name: homelab
   dnsZone: ostbye.dev
+  # Tailscale subnet router (vpn: tailscale). Must match infra/main.tofu's
+  # vpn_access.tailscale — tag the OAuth client is scoped to, and the advertised subnet.
+  tailscaleTags: "tag:halvnais"
+  tailscaleRoutes: "10.0.0.0/8"
   providers:
     dns: cloudflare
     secrets: openbao
@@ -19,7 +23,7 @@ platformRepo:
   credsRef: main
   url: https://github.com/JohanAOstbye/halvnais.git
   path: /
-  revision: test
+  revision: main
 clusterRepo:
   credsRef: main
   url: https://github.com/JohanAOstbye/homelab.git
