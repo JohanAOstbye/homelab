@@ -1,9 +1,0 @@
-name: test-trainr
-namespace: test-trainr
-halvnais:
-  # Staging trainR: tracks the repo's `test` branch and renders its own manifest
-  # (.halvnais/test-trainr.app.yaml → app `test-trainr` at test-trainr.ostbye.dev,
-  # own database, Strava/SMTP shared with prod). Prod stays on apps/trainr.yaml.
-  repository: https://git.ostbye.dev/johanaostbye/trainR.git
-  revision: test
-  appYaml: .halvnais/test-trainr.app.yaml
