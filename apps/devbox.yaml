@@ -1,0 +1,20 @@
+name: devbox
+namespace: devbox
+source:
+  # Persistent herdr / Claude Code sessions over SSH (ssh dev@devbox via the Tailscale operator).
+  repository: https://github.com/JohanAOstbye/devbox.git
+  revision: main
+  path: charts/devbox
+  values:
+    image:
+      # Fixed tag: a new tag restarts the pod and kills running sessions.
+      tag: sha-87f3b3b
+    authorizedKeys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkFv7MWVRfvodKzrTkVkOAwuYbqz1QyKZhMZeeZqQkV johan@ostbye.dev
+    git:
+      userName: Johan August Østbye
+      userEmail: johan@ostbye.dev
+    service:
+      tailscale:
+        enabled: true
+        hostname: devbox
