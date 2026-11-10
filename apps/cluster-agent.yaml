@@ -1,12 +1,5 @@
 name: cluster-agent
 namespace: cluster-agent
-# The agent reads across the cluster, so its per-app project may manage its own
-# ClusterRole/ClusterRoleBinding (read + a few operational verbs, no Secrets).
-clusterResources:
-  - group: rbac.authorization.k8s.io
-    kind: ClusterRole
-  - group: rbac.authorization.k8s.io
-    kind: ClusterRoleBinding
 source:
   # AI agent that maintains the cluster: daily mail report, Telegram chat, alert triage.
   repository: https://github.com/JohanAOstbye/cluster-agent.git
@@ -15,6 +8,9 @@ source:
   values:
     image:
       tag: sha-e95821c
+    # Cluster RBAC is installed by the platform (halvnais apps/cluster-agent-rbac.yaml).
+    rbac:
+      scope: workload
     imagePullSecrets:
       - name: core-github-creds
     clusterName: homelab

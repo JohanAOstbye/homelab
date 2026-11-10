@@ -1,5 +1,5 @@
 module "halvnais" {
-  source = "git::git@github.com:JohanAOstbye/halvnais.git//opentofu?ref=test"
+  source = "git::git@github.com:JohanAOstbye/halvnais.git//opentofu?ref=main"
 
   name = "homelab"
 
@@ -44,7 +44,7 @@ module "halvnais" {
 }
 
 module "halvnais-cluster" {
-  source = "git::git@github.com:JohanAOstbye/halvnais.git//opentofu/cluster?ref=test"
+  source = "git::git@github.com:JohanAOstbye/halvnais.git//opentofu/cluster?ref=main"
 
   cluster_config = module.halvnais.cluster_config
 }
