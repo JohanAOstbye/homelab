@@ -1,0 +1,38 @@
+name: cluster-agent
+namespace: cluster-agent
+# The agent reads across the cluster, so its per-app project may manage its own
+# ClusterRole/ClusterRoleBinding (read + a few operational verbs, no Secrets).
+clusterResources:
+  - group: rbac.authorization.k8s.io
+    kind: ClusterRole
+  - group: rbac.authorization.k8s.io
+    kind: ClusterRoleBinding
+source:
+  # AI agent that maintains the cluster: daily mail report, Telegram chat, alert triage.
+  repository: https://github.com/JohanAOstbye/cluster-agent.git
+  revision: main
+  path: charts/cluster-agent
+  values:
+    image:
+      tag: sha-e95821c
+    imagePullSecrets:
+      - name: core-github-creds
+    clusterName: homelab
+    observability:
+      prometheusUrl: http://core-monitoring-kube-prome-prometheus.core-monitoring:9090
+      lokiUrl: http://loki.core-monitoring:3100
+      alertmanagerUrl: http://core-monitoring-kube-prome-alertmanager.core-monitoring:9093
+    gitea:
+      url: http://gitea-http.core-gitea:3000
+      notesRepo: johanaostbye/ops-notes
+    github:
+      infraRepo: JohanAOstbye/homelab
+    mail:
+      from: johan@ostbye.dev
+      to: johan@ostbye.dev
+    # Secret values live in OpenBao under the keys in the chart's externalSecret.keys.
+    externalSecret:
+      enabled: true
+      property: value
+    protectedNamespaces:
+      - devbox
